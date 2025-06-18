@@ -27,7 +27,7 @@ public class Main extends JFrame {
             "Jajar Genjang", "Belah Ketupat", "Layang-Layang", 
             "Trapesium"
         });
-        SUBCLASS.put("3D", new String[]{}); // Tidak dipakai lagi
+        SUBCLASS.put("3D", new String[]{});
 
         // Relasi 3D sebagai subclass dari 2D
         SUBCLASS_3D.put("Lingkaran", new String[]{"Bola", "Kerucut"});
@@ -144,10 +144,23 @@ public class Main extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         calculateButton = new JButton("Hitung");
         clearButton = new JButton("Clear");
-        hitungThreadButton = new JButton("Tambah Thread");
+        hitungThreadButton = new JButton("Tambah Hitung Baru");
         buttonPanel.add(calculateButton);
         buttonPanel.add(clearButton);
         buttonPanel.add(hitungThreadButton);
+
+        // Tambahkan action listener agar tombol berfungsi
+        calculateButton.addActionListener(e -> calculateGeometry());
+        clearButton.addActionListener(e -> {
+            // Kosongkan semua input di inputPanel dan resultArea
+            for (Component comp : inputPanel.getComponents()) {
+                if (comp instanceof JTextField) {
+                    ((JTextField) comp).setText("");
+                }
+            }
+            resultArea.setText("");
+        });
+        hitungThreadButton.addActionListener(e -> runThreadedCalculation());
 
         // Result Area
         resultArea = new JTextArea(8, 50);
