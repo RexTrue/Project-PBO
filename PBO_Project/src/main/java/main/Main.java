@@ -155,6 +155,11 @@ public class Main extends JFrame {
         gbc.anchor = GridBagConstraints.WEST;
 
         String selectedShape = getSelectedShape();
+        if (selectedShape == null) {
+            inputPanel.revalidate();
+            inputPanel.repaint();
+            return;
+        }
         JTextField[] inputFields = createInputFields(selectedShape);
 
         gbc.gridx = 0;
@@ -163,7 +168,6 @@ public class Main extends JFrame {
             gbc.gridx = 0;
             gbc.gridy = i;
             inputPanel.add(new JLabel(getInputLabel(selectedShape, i) + ":"), gbc);
-            
             gbc.gridx = 1;
             inputPanel.add(inputFields[i], gbc);
         }
@@ -181,6 +185,9 @@ public class Main extends JFrame {
     }
 
     private JTextField[] createInputFields(String shape) {
+        if (shape == null) {
+            return new JTextField[0];
+        }
         switch (shape) {
             // 2D 
             case "Segitiga":
@@ -777,24 +784,117 @@ public class Main extends JFrame {
         }
     }
 
-    private void runThreadedCalculation() {
-        String selectedShape = getSelectedShape();
-        double[] values = getInputValues();
-        if (values == null) {
-            JOptionPane.showMessageDialog(this, "Mohon isi semua parameter dengan nilai yang valid!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+    public class ThreadedCalculationFrame extends JFrame {
+        private JComboBox<String> comboShape;
+        private JPanel inputPanel;
+        private JTextArea resultArea;
+        private JButton hitungButton;
+
+        public ThreadedCalculationFrame() {
+            setTitle("Perhitungan Geometri (Thread)");
+            setSize(400, 350);
+            setLocationRelativeTo(null);
+            setLayout(new BorderLayout(10, 10));
+
+            comboShape = new JComboBox<>(getAllShapes());
+            inputPanel = new JPanel();
+            inputPanel.setBorder(BorderFactory.createTitledBorder("Input Parameter"));
+            resultArea = new JTextArea(6, 30);
+            resultArea.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(resultArea);
+            hitungButton = new JButton("Hitung (Thread)");
+
+            JPanel topPanel = new JPanel(new FlowLayout());
+            topPanel.add(new JLabel("Bentuk:"));
+            topPanel.add(comboShape);
+
+            JPanel bottomPanel = new JPanel(new BorderLayout());
+            bottomPanel.add(hitungButton, BorderLayout.NORTH);
+            bottomPanel.add(scrollPane, BorderLayout.CENTER);
+
+            add(topPanel, BorderLayout.NORTH);
+            add(inputPanel, BorderLayout.CENTER);
+            add(bottomPanel, BorderLayout.SOUTH);
+
+            comboShape.addActionListener(e -> updateInputPanel());
+            hitungButton.addActionListener(e -> runThreadedCalculation());
+
+            updateInputPanel();
         }
-        GeometryTask task = new GeometryTask(selectedShape, values);
-        ThreadExecutor executor = ThreadExecutor.getInstance();
-        Future<?> future = executor.submitTask(task);
-        new Thread(() -> {
-            try {
-                future.get();
-                SwingUtilities.invokeLater(() -> resultArea.setText("[ThreadExecutor]\n" + task.getResult()));
-            } catch (Exception e) {
-                SwingUtilities.invokeLater(() -> resultArea.setText("Thread error: " + e.getMessage()));
+
+        private String[] getAllShapes() {
+            java.util.List<String> shapes = new java.util.ArrayList<>();
+            for (String s : SUBCLASS.get("2D")) shapes.add(s);
+            for (String s : SUBCLASS.get("3D")) shapes.add(s);
+            for (String s : SUBCLASS_3D.getOrDefault("Limas", new String[0])) shapes.add(s);
+            for (String s : SUBCLASS_3D.getOrDefault("Prisma", new String[0])) shapes.add(s);
+            return shapes.toArray(new String[0]);
+        }
+
+        private void updateInputPanel() {
+            inputPanel.removeAll();
+            String shape = (String) comboShape.getSelectedItem();
+            if (shape == null) {
+                inputPanel.revalidate();
+                inputPanel.repaint();
+                return;
             }
-        }).start();
+            JTextField[] inputFields = createInputFields(shape);
+            inputPanel.setLayout(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.anchor = GridBagConstraints.WEST;
+            for (int i = 0; i < inputFields.length; i++) {
+                gbc.gridx = 0;
+                gbc.gridy = i;
+                inputPanel.add(new JLabel(getInputLabel(shape, i) + ":"), gbc);
+                gbc.gridx = 1;
+                inputPanel.add(inputFields[i], gbc);
+            }
+            inputPanel.revalidate();
+            inputPanel.repaint();
+        }
+
+        private double[] getInputValues() {
+            java.util.List<Double> values = new java.util.ArrayList<>();
+            for (Component comp : inputPanel.getComponents()) {
+                if (comp instanceof JTextField) {
+                    String text = ((JTextField) comp).getText().trim();
+                    if (text.isEmpty()) return null;
+                    try {
+                        values.add(Double.parseDouble(text));
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                }
+            }
+            return values.stream().mapToDouble(Double::doubleValue).toArray();
+        }
+
+        private void runThreadedCalculation() {
+            String shape = (String) comboShape.getSelectedItem();
+            double[] values = getInputValues();
+            if (values == null) {
+                JOptionPane.showMessageDialog(this, "Mohon isi semua parameter dengan nilai yang valid!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            GeometryTask task = new GeometryTask(shape, values);
+            ThreadExecutor executor = ThreadExecutor.getInstance();
+            Future<?> future = executor.submitTask(task);
+            new Thread(() -> {
+                try {
+                    future.get();
+                    SwingUtilities.invokeLater(() -> resultArea.setText("[ThreadExecutor]\n" + task.getResult()));
+                } catch (Exception e) {
+                    SwingUtilities.invokeLater(() -> resultArea.setText("Thread error: " + e.getMessage()));
+                }
+            }).start();
+        }
+    }
+
+    private void runThreadedCalculation() {
+        ThreadedCalculationFrame frame = new ThreadedCalculationFrame();
+        frame.setVisible(true);
     }
 
     public static void main(String[] args) {
