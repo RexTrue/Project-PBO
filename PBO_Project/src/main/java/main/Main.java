@@ -5,6 +5,7 @@ import java.awt.*;
 import java.util.*;
 import Geometri.benda2D.*;
 import Geometri.benda3D.*;
+import Geometri.threading.ThreadExecutor;
 
 public class Main extends JFrame {
     private JComboBox<String> comboSuper;
@@ -14,6 +15,7 @@ public class Main extends JFrame {
     private JTextArea resultArea;
     private JButton calculateButton;
     private JButton clearButton;
+    private JButton threadButton;
 
     private static final String[] SUPERCLASS = {"2D", "3D"};
     private static final Map<String, String[]> SUBCLASS = new HashMap<>();
@@ -94,8 +96,10 @@ public class Main extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         calculateButton = new JButton("Hitung");
         clearButton = new JButton("Clear");
+        threadButton = new JButton("Thread");
         buttonPanel.add(calculateButton);
         buttonPanel.add(clearButton);
+        buttonPanel.add(threadButton);
 
         // Result Area
         resultArea = new JTextArea(8, 50);
@@ -115,6 +119,7 @@ public class Main extends JFrame {
         comboSub3D.addActionListener(e -> updateInputPanel());
         calculateButton.addActionListener(e -> calculateGeometry());
         clearButton.addActionListener(e -> clearAll());
+        threadButton.addActionListener(e -> runThreadDemo());
     }
 
     private void updateSubCombo() {
@@ -568,6 +573,18 @@ public class Main extends JFrame {
                 ((JTextField) comp).setText("");
             }
         }
+    }
+
+    private void runThreadDemo() {
+        // Contoh: Hitung luas Lingkaran dengan radius 10 di thread pool
+        ThreadExecutor executor = ThreadExecutor.getInstance();
+        Runnable task = () -> {
+            Lingkaran l = new Lingkaran(10);
+            String hasil = "[ThreadExecutor] Luas Lingkaran (r=10): " + l.hitungLuas();
+            SwingUtilities.invokeLater(() -> resultArea.setText(hasil));
+        };
+        executor.submitTask(task);
+        executor.shutdownAndAwait();
     }
 
     public static void main(String[] args) {

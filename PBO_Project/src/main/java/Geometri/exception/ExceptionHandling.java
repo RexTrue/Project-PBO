@@ -63,38 +63,6 @@ class GeometryValidationException extends BaseGeometryException {
     public String getExpectedFormat() { return expectedFormat; }
 }
 
-class NegativeValueException extends GeometryValidationException {
-    public NegativeValueException(String parameterName, double value) {
-        super(String.format("Nilai %s tidak boleh negatif atau nol: %.2f", parameterName, value),
-              String.valueOf(value), "positive number");
-    }
-    
-    public NegativeValueException(String parameterName, double value, Throwable cause) {
-        super(String.format("Nilai %s tidak boleh negatif atau nol: %.2f", parameterName, value),
-              String.valueOf(value), "positive number", cause);
-    }
-    
-    @Override
-    public String getExceptionType() {
-        return "NEGATIVE_VALUE_EXCEPTION";
-    }
-}
-class InvalidAngleException extends GeometryValidationException {
-    public InvalidAngleException(double angle) {
-        super(String.format("Sudut harus antara 0° dan 360°: %.2f°", angle),
-              String.valueOf(angle), "0° to 360°");
-    }
-    
-    public InvalidAngleException(double angle, Throwable cause) {
-        super(String.format("Sudut harus antara 0° dan 360°: %.2f°", angle),
-              String.valueOf(angle), "0° to 360°", cause);
-    }
-    
-    @Override
-    public String getExceptionType() {
-        return "INVALID_ANGLE_EXCEPTION";
-    }
-}
 class GeometryCalculationException extends BaseGeometryException {
     private final String operation;
     private final String formula;
@@ -205,9 +173,9 @@ class LoggingExceptionStrategy implements ExceptionHandlingStrategy {
 class RecoveryExceptionStrategy implements ExceptionHandlingStrategy {
     @Override
     public boolean handleException(BaseGeometryException exception) {
-        if (exception instanceof NegativeValueException) {
+        if (exception instanceof GeometryValidationException) {
             System.out.println("RECOVERY: Menggunakan nilai default untuk " + 
-                             ((NegativeValueException) exception).getInvalidValue());
+                             ((GeometryValidationException) exception).getInvalidValue());
             return true;
         }
         return false;
