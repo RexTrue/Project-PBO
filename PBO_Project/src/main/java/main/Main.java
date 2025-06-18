@@ -144,7 +144,7 @@ public class Main extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         calculateButton = new JButton("Hitung");
         clearButton = new JButton("Clear");
-        hitungThreadButton = new JButton("Hitung (Thread)");
+        hitungThreadButton = new JButton("Tambah Thread");
         buttonPanel.add(calculateButton);
         buttonPanel.add(clearButton);
         buttonPanel.add(hitungThreadButton);
@@ -558,16 +558,6 @@ public class Main extends JFrame {
         return result.toString();
     }
 
-    private void clearAll() {
-        resultArea.setText("");
-        Component[] components = inputPanel.getComponents();
-        for (Component comp : components) {
-            if (comp instanceof JTextField) {
-                ((JTextField) comp).setText("");
-            }
-        }
-    }
-
     public static class GeometryTask implements Runnable {
         private final String shape;
         private final double[] values;
@@ -775,9 +765,10 @@ public class Main extends JFrame {
         private JPanel inputPanel;
         private JTextArea resultArea;
         private JButton hitungButton;
+        private JTextField[] inputFields;
 
         public ThreadedCalculationFrame(String selectedShape) {
-            setTitle("Perhitungan Geometri (Thread)");
+            setTitle("Perhitungan Geometri");
             setSize(400, 350);
             setLocationRelativeTo(null);
             setLayout(new BorderLayout(10, 10));
@@ -787,7 +778,7 @@ public class Main extends JFrame {
             resultArea = new JTextArea(6, 30);
             resultArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(resultArea);
-            hitungButton = new JButton("Hitung (Thread)");
+            hitungButton = new JButton("Hitung");
 
             JPanel bottomPanel = new JPanel(new BorderLayout());
             bottomPanel.add(hitungButton, BorderLayout.NORTH);
@@ -807,7 +798,7 @@ public class Main extends JFrame {
                 inputPanel.repaint();
                 return;
             }
-            JTextField[] inputFields = createInputFields(shape);
+            inputFields = createInputFields(shape);
             inputPanel.setLayout(new GridBagLayout());
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(5, 5, 5, 5);
@@ -825,15 +816,13 @@ public class Main extends JFrame {
 
         private double[] getInputValues() {
             java.util.List<Double> values = new java.util.ArrayList<>();
-            for (Component comp : inputPanel.getComponents()) {
-                if (comp instanceof JTextField) {
-                    String text = ((JTextField) comp).getText().trim();
-                    if (text.isEmpty()) return null;
-                    try {
-                        values.add(Double.parseDouble(text));
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
+            for (JTextField field : inputFields) {
+                String text = field.getText().trim();
+                if (text.isEmpty()) return null;
+                try {
+                    values.add(Double.parseDouble(text));
+                } catch (NumberFormatException e) {
+                    return null;
                 }
             }
             return values.stream().mapToDouble(Double::doubleValue).toArray();
@@ -845,15 +834,23 @@ public class Main extends JFrame {
                 JOptionPane.showMessageDialog(this, "Mohon isi semua parameter dengan nilai yang valid!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            GeometryTask task = new GeometryTask(shape, values);
+            hitungButton.setEnabled(false);
+            resultArea.setText("Sedang menghitung di thread...");
             ThreadExecutor executor = ThreadExecutor.getInstance();
+            GeometryTask task = new GeometryTask(shape, values);
             Future<?> future = executor.submitTask(task);
             new Thread(() -> {
                 try {
                     future.get();
-                    SwingUtilities.invokeLater(() -> resultArea.setText("[ThreadExecutor]\n" + task.getResult()));
+                    SwingUtilities.invokeLater(() -> {
+                        resultArea.setText("[ThreadExecutor]\n" + task.getResult());
+                        hitungButton.setEnabled(true);
+                    });
                 } catch (Exception e) {
-                    SwingUtilities.invokeLater(() -> resultArea.setText("Thread error: " + e.getMessage()));
+                    SwingUtilities.invokeLater(() -> {
+                        resultArea.setText("Thread error: " + e.getMessage());
+                        hitungButton.setEnabled(true);
+                    });
                 }
             }).start();
         }
