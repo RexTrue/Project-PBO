@@ -6,6 +6,7 @@ import java.util.*;
 import Geometri.benda2D.*;
 import Geometri.benda3D.*;
 import Geometri.threading.ThreadExecutor;
+import java.util.concurrent.Future;
 
 public class Main extends JFrame {
     private JComboBox<String> comboSuper;
@@ -15,7 +16,7 @@ public class Main extends JFrame {
     private JTextArea resultArea;
     private JButton calculateButton;
     private JButton clearButton;
-    private JButton threadButton;
+    private JButton hitungThreadButton;
 
     private static final String[] SUPERCLASS = {"2D", "3D"};
     private static final Map<String, String[]> SUBCLASS = new HashMap<>();
@@ -96,10 +97,10 @@ public class Main extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         calculateButton = new JButton("Hitung");
         clearButton = new JButton("Clear");
-        threadButton = new JButton("Thread");
+        hitungThreadButton = new JButton("Hitung (Thread)");
         buttonPanel.add(calculateButton);
         buttonPanel.add(clearButton);
-        buttonPanel.add(threadButton);
+        buttonPanel.add(hitungThreadButton);
 
         // Result Area
         resultArea = new JTextArea(8, 50);
@@ -119,7 +120,7 @@ public class Main extends JFrame {
         comboSub3D.addActionListener(e -> updateInputPanel());
         calculateButton.addActionListener(e -> calculateGeometry());
         clearButton.addActionListener(e -> clearAll());
-        threadButton.addActionListener(e -> runThreadDemo());
+        hitungThreadButton.addActionListener(e -> runThreadedCalculation());
     }
 
     private void updateSubCombo() {
@@ -575,16 +576,225 @@ public class Main extends JFrame {
         }
     }
 
-    private void runThreadDemo() {
-        // Contoh: Hitung luas Lingkaran dengan radius 10 di thread pool
+    public static class GeometryTask implements Runnable {
+        private final String shape;
+        private final double[] values;
+        private String result;
+
+        public GeometryTask(String shape, double[] values) {
+            this.shape = shape;
+            this.values = values;
+        }
+
+        @Override
+        public void run() {
+            StringBuilder sb = new StringBuilder();
+            try {
+                switch (shape) {
+                    case "Segitiga":
+                        Segitiga segitiga = new Segitiga(values[0], values[1]);
+                        sb.append("Luas: ").append(String.format("%.2f", segitiga.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", segitiga.hitungKeliling())).append("\n");
+                        break;
+                    case "Persegi":
+                        Persegi persegi = new Persegi(values[0]);
+                        sb.append("Luas: ").append(String.format("%.2f", persegi.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", persegi.hitungKeliling())).append("\n");
+                        break;
+                    case "Persegi Panjang":
+                        PersegiPanjang persegiPanjang = new PersegiPanjang(values[0], values[1]);
+                        sb.append("Luas: ").append(String.format("%.2f", persegiPanjang.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", persegiPanjang.hitungKeliling())).append("\n");
+                        break;
+                    case "Lingkaran":
+                        Lingkaran lingkaran = new Lingkaran(values[0]);
+                        sb.append("Luas: ").append(String.format("%.2f", lingkaran.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", lingkaran.hitungKeliling())).append("\n");
+                        break;
+                    case "Jajar Genjang":
+                        JajaranGenjang jajaranGenjang = new JajaranGenjang(values[0], values[1], values[2]);
+                        sb.append("Luas: ").append(String.format("%.2f", jajaranGenjang.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", jajaranGenjang.hitungKeliling())).append("\n");
+                        break;
+                    case "Belah Ketupat":
+                        BelahKetupat belahKetupat = new BelahKetupat(values[0], values[1], values[2]);
+                        sb.append("Luas: ").append(String.format("%.2f", belahKetupat.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", belahKetupat.hitungKeliling())).append("\n");
+                        break;
+                    case "Layang-Layang":
+                        LayangLayang layangLayang = new LayangLayang(values[0], values[1]);
+                        sb.append("Luas: ").append(String.format("%.2f", layangLayang.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", layangLayang.hitungKeliling())).append("\n");
+                        break;
+                    case "Trapesium":
+                        Trapesium trapesium = new Trapesium(values[0], values[1], values[2]);
+                        sb.append("Luas: ").append(String.format("%.2f", trapesium.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", trapesium.hitungKeliling())).append("\n");
+                        break;
+                    case "Juring Lingkaran":
+                        JuringLingkaran juringLingkaran = new JuringLingkaran(values[0], values[1]);
+                        sb.append("Luas: ").append(String.format("%.2f", juringLingkaran.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", juringLingkaran.hitungKeliling())).append("\n");
+                        break;
+                    case "Tembereng Lingkaran":
+                        TemberengLingkaran temberengLingkaran = new TemberengLingkaran(values[0], values[1]);
+                        sb.append("Luas: ").append(String.format("%.2f", temberengLingkaran.hitungLuas())).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", temberengLingkaran.hitungKeliling())).append("\n");
+                        break;
+                    // 3D
+                    case "Bola":
+                        Bola bola = new Bola(values[0]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", bola.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", bola.hitungVolume())).append("\n");
+                        break;
+                    case "Tabung":
+                        Tabung tabung = new Tabung(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", tabung.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", tabung.hitungVolume())).append("\n");
+                        break;
+                    case "Kerucut":
+                        Kerucut kerucut = new Kerucut(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", kerucut.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", kerucut.hitungVolume())).append("\n");
+                        break;
+                    case "Kubus":
+                        Persegi kubus = new Persegi(values[0]);
+                        double luasKubus = 6 * kubus.hitungLuas();
+                        double volumeKubus = Math.pow(values[0], 3);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", luasKubus)).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", volumeKubus)).append("\n");
+                        break;
+                    case "Balok":
+                        double p = values[0], l = values[1], t = values[2];
+                        double luasBalok = 2 * (p*l + p*t + l*t);
+                        double volumeBalok = p * l * t;
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", luasBalok)).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", volumeBalok)).append("\n");
+                        break;
+                    case "Cincin Bola":
+                        CincinBola cincinBola = new CincinBola(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", cincinBola.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", cincinBola.hitungVolume())).append("\n");
+                        break;
+                    case "Juring Bola":
+                        JuringBola juringBola = new JuringBola(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", juringBola.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", juringBola.hitungVolume())).append("\n");
+                        break;
+                    case "Tembereng Bola":
+                        TemberengBola temberengBola = new TemberengBola(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", temberengBola.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", temberengBola.hitungVolume())).append("\n");
+                        break;
+                    case "Kerucut Terpancung":
+                        KerucutTerpancung kerucutTerpancung = new KerucutTerpancung(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", kerucutTerpancung.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", kerucutTerpancung.hitungVolume())).append("\n");
+                        break;
+                    // Limas
+                    case "Limas Persegi":
+                        LimasPersegi limasPersegi = new LimasPersegi(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasPersegi.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasPersegi.hitungVolume())).append("\n");
+                        break;
+                    case "Limas Persegi Panjang":
+                        LimasPersegiPanjang limasPersegiPanjang = new LimasPersegiPanjang(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasPersegiPanjang.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasPersegiPanjang.hitungVolume())).append("\n");
+                        break;
+                    case "Limas Segitiga":
+                        LimasSegitiga limasSegitiga = new LimasSegitiga(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasSegitiga.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasSegitiga.hitungVolume())).append("\n");
+                        break;
+                    case "Limas Trapesium":
+                        LimasTrapesium limasTrapesium = new LimasTrapesium(values[0], values[1], values[2], values[3]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasTrapesium.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasTrapesium.hitungVolume())).append("\n");
+                        break;
+                    case "Limas Belah Ketupat":
+                        LimasBelahKetupat limasBelahKetupat = new LimasBelahKetupat(values[0], values[1], values[2], values[3]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasBelahKetupat.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasBelahKetupat.hitungVolume())).append("\n");
+                        break;
+                    case "Limas Jajar Genjang":
+                        LimasJajaranGenjang limasJajaranGenjang = new LimasJajaranGenjang(values[0], values[1], values[2], values[3], values[4]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasJajaranGenjang.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasJajaranGenjang.hitungVolume())).append("\n");
+                        break;
+                    case "Limas Layang-Layang":
+                        LimasLayangLayang limasLayangLayang = new LimasLayangLayang(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", limasLayangLayang.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", limasLayangLayang.hitungVolume())).append("\n");
+                        break;
+                    // Prisma
+                    case "Prisma Persegi":
+                        PrismaPersegi prismaPersegi = new PrismaPersegi(values[0], values[1]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaPersegi.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaPersegi.hitungVolume())).append("\n");
+                        break;
+                    case "Prisma Persegi Panjang":
+                        PrismaPersegiPanjang prismaPersegiPanjang = new PrismaPersegiPanjang(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaPersegiPanjang.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaPersegiPanjang.hitungVolume())).append("\n");
+                        break;
+                    case "Prisma Segitiga":
+                        PrismaSegitiga prismaSegitiga = new PrismaSegitiga(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaSegitiga.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaSegitiga.hitungVolume())).append("\n");
+                        break;
+                    case "Prisma Trapesium":
+                        PrismaTrapesium prismaTrapesium = new PrismaTrapesium(values[0], values[1], values[2], values[3]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaTrapesium.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaTrapesium.hitungVolume())).append("\n");
+                        break;
+                    case "Prisma Belah Ketupat":
+                        PrismaBelahKetupat prismaBelahKetupat = new PrismaBelahKetupat(values[0], values[1], values[2], values[3]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaBelahKetupat.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaBelahKetupat.hitungVolume())).append("\n");
+                        break;
+                    case "Prisma Jajar Genjang":
+                        PrismaJajaranGenjang prismaJajaranGenjang = new PrismaJajaranGenjang(values[0], values[1], values[2], values[3], values[4]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaJajaranGenjang.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaJajaranGenjang.hitungVolume())).append("\n");
+                        break;
+                    case "Prisma Layang-Layang":
+                        PrismaLayangLayang prismaLayangLayang = new PrismaLayangLayang(values[0], values[1], values[2]);
+                        sb.append("Luas Permukaan: ").append(String.format("%.2f", prismaLayangLayang.hitungLuasPermukaan())).append("\n");
+                        sb.append("Volume: ").append(String.format("%.2f", prismaLayangLayang.hitungVolume())).append("\n");
+                        break;
+                    default:
+                        sb.append("Bentuk geometri belum diimplementasikan di Thread.");
+                }
+            } catch (Exception e) {
+                sb.append("Error: ").append(e.getMessage());
+            }
+            result = sb.toString();
+        }
+
+        public String getResult() {
+            return result;
+        }
+    }
+
+    private void runThreadedCalculation() {
+        String selectedShape = getSelectedShape();
+        double[] values = getInputValues();
+        if (values == null) {
+            JOptionPane.showMessageDialog(this, "Mohon isi semua parameter dengan nilai yang valid!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        GeometryTask task = new GeometryTask(selectedShape, values);
         ThreadExecutor executor = ThreadExecutor.getInstance();
-        Runnable task = () -> {
-            Lingkaran l = new Lingkaran(10);
-            String hasil = "[ThreadExecutor] Luas Lingkaran (r=10): " + l.hitungLuas();
-            SwingUtilities.invokeLater(() -> resultArea.setText(hasil));
-        };
-        executor.submitTask(task);
-        executor.shutdownAndAwait();
+        Future<?> future = executor.submitTask(task);
+        new Thread(() -> {
+            try {
+                future.get();
+                SwingUtilities.invokeLater(() -> resultArea.setText("[ThreadExecutor]\n" + task.getResult()));
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> resultArea.setText("Thread error: " + e.getMessage()));
+            }
+        }).start();
     }
 
     public static void main(String[] args) {
