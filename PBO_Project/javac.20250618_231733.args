@@ -1,0 +1,12 @@
+-cp
+src/main/java
+src\\main\\java\\Geometri\\benda2D\\BelahKetupat.java
+src\\main\\java\\Geometri\\benda2D\\JajaranGenjang.java
+src\\main\\java\\Geometri\\benda2D\\JuringLingkaran.java
+src\\main\\java\\Geometri\\benda2D\\LayangLayang.java
+src\\main\\java\\Geometri\\benda2D\\Lingkaran.java
+src\\main\\java\\Geometri\\benda2D\\Persegi.java
+src\\main\\java\\Geometri\\benda2D\\PersegiPanjang.java
+src\\main\\java\\Geometri\\benda2D\\Segitiga.java
+src\\main\\java\\Geometri\\benda2D\\TemberengLingkaran.java
+src\\main\\java\\Geometri\\benda2D\\Trapesium.java
