@@ -9,14 +9,13 @@ import Geometri.threading.ThreadExecutor;
 import java.util.concurrent.Future;
 
 public class Main extends JFrame {
-    private JComboBox<String> comboSuper;
-    private JComboBox<String> comboSub;
-    private JComboBox<String> comboSub3D;
     private JPanel inputPanel;
     private JTextArea resultArea;
     private JButton calculateButton;
     private JButton clearButton;
     private JButton hitungThreadButton;
+    private JMenuBar menuBar;
+    private String selectedShape = null;
 
     private static final String[] SUPERCLASS = {"2D", "3D"};
     private static final Map<String, String[]> SUBCLASS = new HashMap<>();
@@ -26,26 +25,21 @@ public class Main extends JFrame {
         SUBCLASS.put("2D", new String[]{
             "Segitiga", "Persegi", "Persegi Panjang", "Lingkaran", 
             "Jajar Genjang", "Belah Ketupat", "Layang-Layang", 
-            "Trapesium", "Juring Lingkaran", "Tembereng Lingkaran"
+            "Trapesium"
         });
+        SUBCLASS.put("3D", new String[]{}); // Tidak dipakai lagi
 
-        SUBCLASS.put("3D", new String[]{
-            "Bola", "Tabung", "Kerucut", "Kubus", "Balok", 
-            "Limas", "Prisma", "Cincin Bola", "Juring Bola", 
-            "Tembereng Bola", "Kerucut Terpancung"
-        });
-
-        SUBCLASS_3D.put("Limas", new String[]{
-            "Limas Persegi", "Limas Persegi Panjang", "Limas Segitiga", 
-            "Limas Trapesium", "Limas Belah Ketupat", 
-            "Limas Jajar Genjang", "Limas Layang-Layang"
-        });
-
-        SUBCLASS_3D.put("Prisma", new String[]{
-            "Prisma Persegi", "Prisma Persegi Panjang", "Prisma Segitiga", 
-            "Prisma Trapesium", "Prisma Belah Ketupat", 
-            "Prisma Jajar Genjang", "Prisma Layang-Layang"
-        });
+        // Relasi 3D sebagai subclass dari 2D
+        SUBCLASS_3D.put("Lingkaran", new String[]{"Bola", "Kerucut"});
+        SUBCLASS_3D.put("Bola", new String[]{"Cincin Bola"});
+        SUBCLASS_3D.put("Kerucut", new String[]{"Kerucut Terpancung"});
+        SUBCLASS_3D.put("Belah Ketupat", new String[]{"Limas Belah Ketupat", "Prisma Belah Ketupat"});
+        SUBCLASS_3D.put("Jajar Genjang", new String[]{"Limas Jajar Genjang", "Prisma Jajar Genjang"});
+        SUBCLASS_3D.put("Layang-Layang", new String[]{"Limas Layang-Layang", "Prisma Layang-Layang"});
+        SUBCLASS_3D.put("Persegi", new String[]{"Limas Persegi", "Prisma Persegi"});
+        SUBCLASS_3D.put("Persegi Panjang", new String[]{"Limas Persegi Panjang", "Prisma Persegi Panjang"});
+        SUBCLASS_3D.put("Segitiga", new String[]{"Limas Segitiga", "Prisma Segitiga"});
+        SUBCLASS_3D.put("Trapesium", new String[]{"Limas Trapesium", "Prisma Trapesium"});
     }
 
     public Main() {
@@ -55,8 +49,8 @@ public class Main extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        JPanel topPanel = createTopPanel();
-        add(topPanel, BorderLayout.NORTH);
+        menuBar = createMenuBar();
+        setJMenuBar(menuBar);
 
         inputPanel = new JPanel();
         inputPanel.setBorder(BorderFactory.createTitledBorder("Input Parameter"));
@@ -65,28 +59,81 @@ public class Main extends JFrame {
         JPanel bottomPanel = createBottomPanel();
         add(bottomPanel, BorderLayout.SOUTH);
 
-        setupEventListeners();
-
-        updateSubCombo();
+        updateInputPanel();
     }
 
-    private JPanel createTopPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("Pilih Bentuk Geometri"));
+    private JMenuBar createMenuBar() {
+        JMenuBar bar = new JMenuBar();
+        for (String s : SUBCLASS.get("2D")) {
+            if (SUBCLASS_3D.containsKey(s)) {
+                JMenu shapeMenu = new JMenu(s);
+                JMenuItem selfItem = new JMenuItem(s);
+                selfItem.addActionListener(e -> selectShape(s));
+                shapeMenu.add(selfItem);
+                for (String sub : SUBCLASS_3D.get(s)) {
+                    // Cek jika subclass juga punya subclass (misal: Bola -> Cincin Bola)
+                    if (SUBCLASS_3D.containsKey(sub)) {
+                        JMenu subMenu = new JMenu(sub);
+                        JMenuItem subSelf = new JMenuItem(sub);
+                        subSelf.addActionListener(e -> selectShape(sub));
+                        subMenu.add(subSelf);
+                        for (String subsub : SUBCLASS_3D.get(sub)) {
+                            JMenuItem subSubItem = new JMenuItem(subsub);
+                            subSubItem.addActionListener(e -> selectShape(subsub));
+                            subMenu.add(subSubItem);
+                        }
+                        shapeMenu.add(subMenu);
+                    } else {
+                        JMenuItem subItem = new JMenuItem(sub);
+                        subItem.addActionListener(e -> selectShape(sub));
+                        shapeMenu.add(subItem);
+                    }
+                }
+                bar.add(shapeMenu);
+            } else {
+                JMenuItem item = new JMenuItem(s);
+                item.addActionListener(e -> selectShape(s));
+                bar.add(item);
+            }
+        }
+        return bar;
+    }
 
-        comboSuper = new JComboBox<>(SUPERCLASS);
-        comboSub = new JComboBox<>();
-        comboSub3D = new JComboBox<>();
-        comboSub3D.setVisible(false);
+    private void selectShape(String shape) {
+        this.selectedShape = shape;
+        updateInputPanel();
+    }
 
-        panel.add(new JLabel("Tipe:"));
-        panel.add(comboSuper);
-        panel.add(new JLabel("Bentuk:"));
-        panel.add(comboSub);
-        panel.add(new JLabel("Subclass:"));
-        panel.add(comboSub3D);
+    private void updateInputPanel() {
+        inputPanel.removeAll();
+        inputPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
 
-        return panel;
+        if (selectedShape == null) {
+            inputPanel.revalidate();
+            inputPanel.repaint();
+            return;
+        }
+        JTextField[] inputFields = createInputFields(selectedShape);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        for (int i = 0; i < inputFields.length; i++) {
+            gbc.gridx = 0;
+            gbc.gridy = i;
+            inputPanel.add(new JLabel(getInputLabel(selectedShape, i) + ":"), gbc);
+            gbc.gridx = 1;
+            inputPanel.add(inputFields[i], gbc);
+        }
+
+        inputPanel.revalidate();
+        inputPanel.repaint();
+    }
+
+    private String getSelectedShape() {
+        return selectedShape;
     }
 
     private JPanel createBottomPanel() {
@@ -114,76 +161,6 @@ public class Main extends JFrame {
         return panel;
     }
 
-    private void setupEventListeners() {
-        comboSuper.addActionListener(e -> updateSubCombo());
-        comboSub.addActionListener(e -> updateSub3DCombo());
-        comboSub3D.addActionListener(e -> updateInputPanel());
-        calculateButton.addActionListener(e -> calculateGeometry());
-        clearButton.addActionListener(e -> clearAll());
-        hitungThreadButton.addActionListener(e -> runThreadedCalculation());
-    }
-
-    private void updateSubCombo() {
-        String selectedSuper = (String) comboSuper.getSelectedItem();
-        comboSub.removeAllItems();
-        for (String s : SUBCLASS.get(selectedSuper)) {
-            comboSub.addItem(s);
-        }
-        comboSub3D.setVisible(false);
-        updateInputPanel();
-    }
-
-    private void updateSub3DCombo() {
-        String selectedSub = (String) comboSub.getSelectedItem();
-        if (SUBCLASS_3D.containsKey(selectedSub)) {
-            comboSub3D.setVisible(true);
-            comboSub3D.removeAllItems();
-            for (String s : SUBCLASS_3D.get(selectedSub)) {
-                comboSub3D.addItem(s);
-            }
-        } else {
-            comboSub3D.setVisible(false);
-        }
-        updateInputPanel();
-    }
-
-    private void updateInputPanel() {
-        inputPanel.removeAll();
-        inputPanel.setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        String selectedShape = getSelectedShape();
-        if (selectedShape == null) {
-            inputPanel.revalidate();
-            inputPanel.repaint();
-            return;
-        }
-        JTextField[] inputFields = createInputFields(selectedShape);
-
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        for (int i = 0; i < inputFields.length; i++) {
-            gbc.gridx = 0;
-            gbc.gridy = i;
-            inputPanel.add(new JLabel(getInputLabel(selectedShape, i) + ":"), gbc);
-            gbc.gridx = 1;
-            inputPanel.add(inputFields[i], gbc);
-        }
-
-        inputPanel.revalidate();
-        inputPanel.repaint();
-    }
-
-    private String getSelectedShape() {
-        String selectedSub = (String) comboSub.getSelectedItem();
-        if (comboSub3D.isVisible() && comboSub3D.getSelectedItem() != null) {
-            return (String) comboSub3D.getSelectedItem();
-        }
-        return selectedSub;
-    }
-
     private JTextField[] createInputFields(String shape) {
         if (shape == null) {
             return new JTextField[0];
@@ -191,7 +168,7 @@ public class Main extends JFrame {
         switch (shape) {
             // 2D 
             case "Segitiga":
-                return new JTextField[]{new JTextField(10), new JTextField(10)};
+                return new JTextField[]{new JTextField(10), new JTextField(10), new JTextField(10), new JTextField(10), new JTextField(10)};
             case "Persegi":
                 return new JTextField[]{new JTextField(10)};
             case "Persegi Panjang":
@@ -271,7 +248,13 @@ public class Main extends JFrame {
     private String getInputLabel(String shape, int index) {
         switch (shape) {
             case "Segitiga":
-                return index == 0 ? "Alas" : "Tinggi";
+                switch (index) {
+                    case 0: return "Alas";
+                    case 1: return "Tinggi";
+                    case 2: return "Sisi 1";
+                    case 3: return "Sisi 2";
+                    case 4: return "Sisi 3";
+                }
             case "Persegi":
                 return "Sisi";
             case "Persegi Panjang":
@@ -403,8 +386,10 @@ public class Main extends JFrame {
                 // 2D Shapes
                 case "Segitiga":
                     Segitiga segitiga = new Segitiga(values[0], values[1]);
-                    result.append("Luas: ").append(String.format("%.2f", segitiga.hitungLuas())).append("\n");
-                    result.append("Keliling: ").append(String.format("%.2f", segitiga.hitungKeliling())).append("\n");
+                    double luas = segitiga.hitungLuas();
+                    double keliling = segitiga.hitungKeliling(values[2], values[3], values[4]);
+                    result.append("Luas: ").append(String.format("%.2f", luas)).append("\n");
+                    result.append("Keliling: ").append(String.format("%.2f", keliling)).append("\n");
                     break;
                 case "Persegi":
                     Persegi persegi = new Persegi(values[0]);
@@ -600,8 +585,10 @@ public class Main extends JFrame {
                 switch (shape) {
                     case "Segitiga":
                         Segitiga segitiga = new Segitiga(values[0], values[1]);
-                        sb.append("Luas: ").append(String.format("%.2f", segitiga.hitungLuas())).append("\n");
-                        sb.append("Keliling: ").append(String.format("%.2f", segitiga.hitungKeliling())).append("\n");
+                        double luas = segitiga.hitungLuas();
+                        double keliling = segitiga.hitungKeliling(values[2], values[3], values[4]);
+                        sb.append("Luas: ").append(String.format("%.2f", luas)).append("\n");
+                        sb.append("Keliling: ").append(String.format("%.2f", keliling)).append("\n");
                         break;
                     case "Persegi":
                         Persegi persegi = new Persegi(values[0]);
@@ -785,18 +772,16 @@ public class Main extends JFrame {
     }
 
     public class ThreadedCalculationFrame extends JFrame {
-        private JComboBox<String> comboShape;
         private JPanel inputPanel;
         private JTextArea resultArea;
         private JButton hitungButton;
 
-        public ThreadedCalculationFrame() {
+        public ThreadedCalculationFrame(String selectedShape) {
             setTitle("Perhitungan Geometri (Thread)");
             setSize(400, 350);
             setLocationRelativeTo(null);
             setLayout(new BorderLayout(10, 10));
 
-            comboShape = new JComboBox<>(getAllShapes());
             inputPanel = new JPanel();
             inputPanel.setBorder(BorderFactory.createTitledBorder("Input Parameter"));
             resultArea = new JTextArea(6, 30);
@@ -804,36 +789,19 @@ public class Main extends JFrame {
             JScrollPane scrollPane = new JScrollPane(resultArea);
             hitungButton = new JButton("Hitung (Thread)");
 
-            JPanel topPanel = new JPanel(new FlowLayout());
-            topPanel.add(new JLabel("Bentuk:"));
-            topPanel.add(comboShape);
-
             JPanel bottomPanel = new JPanel(new BorderLayout());
             bottomPanel.add(hitungButton, BorderLayout.NORTH);
             bottomPanel.add(scrollPane, BorderLayout.CENTER);
 
-            add(topPanel, BorderLayout.NORTH);
             add(inputPanel, BorderLayout.CENTER);
             add(bottomPanel, BorderLayout.SOUTH);
 
-            comboShape.addActionListener(e -> updateInputPanel());
-            hitungButton.addActionListener(e -> runThreadedCalculation());
-
-            updateInputPanel();
+            updateInputPanel(selectedShape);
+            hitungButton.addActionListener(e -> runThreadedCalculation(selectedShape));
         }
 
-        private String[] getAllShapes() {
-            java.util.List<String> shapes = new java.util.ArrayList<>();
-            for (String s : SUBCLASS.get("2D")) shapes.add(s);
-            for (String s : SUBCLASS.get("3D")) shapes.add(s);
-            for (String s : SUBCLASS_3D.getOrDefault("Limas", new String[0])) shapes.add(s);
-            for (String s : SUBCLASS_3D.getOrDefault("Prisma", new String[0])) shapes.add(s);
-            return shapes.toArray(new String[0]);
-        }
-
-        private void updateInputPanel() {
+        private void updateInputPanel(String shape) {
             inputPanel.removeAll();
-            String shape = (String) comboShape.getSelectedItem();
             if (shape == null) {
                 inputPanel.revalidate();
                 inputPanel.repaint();
@@ -871,8 +839,7 @@ public class Main extends JFrame {
             return values.stream().mapToDouble(Double::doubleValue).toArray();
         }
 
-        private void runThreadedCalculation() {
-            String shape = (String) comboShape.getSelectedItem();
+        private void runThreadedCalculation(String shape) {
             double[] values = getInputValues();
             if (values == null) {
                 JOptionPane.showMessageDialog(this, "Mohon isi semua parameter dengan nilai yang valid!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -893,7 +860,11 @@ public class Main extends JFrame {
     }
 
     private void runThreadedCalculation() {
-        ThreadedCalculationFrame frame = new ThreadedCalculationFrame();
+        if (selectedShape == null) {
+            JOptionPane.showMessageDialog(this, "Pilih bentuk terlebih dahulu dari menu!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        ThreadedCalculationFrame frame = new ThreadedCalculationFrame(selectedShape);
         frame.setVisible(true);
     }
 
